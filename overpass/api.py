@@ -1,6 +1,7 @@
 import sys
-import requests
 import json
+
+import requests
 import geojson
 
 
@@ -90,9 +91,9 @@ class API(object):
         payload = {"data": query}
 
         try:
-            r = requests.get(
+            r = requests.post(
                 self.endpoint,
-                params=payload,
+                data=payload,
                 timeout=self.timeout
             )
         except requests.exceptions.Timeout:
