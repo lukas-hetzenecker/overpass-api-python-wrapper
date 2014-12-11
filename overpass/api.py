@@ -1,6 +1,7 @@
 import sys
-import requests
 import json
+
+import requests
 import geojson
 
 
@@ -13,8 +14,8 @@ class API(object):
     _responseformat = "json"
     _debug = False
 
-    _QUERY_TEMPLATE = "[out:{responseformat}];{query}out body;"
-    _GEOJSON_QUERY_TEMPLATE = "[out:json];{query}out body geom;"
+    _QUERY_TEMPLATE = "[out:{responseformat}];{query}out body{extra};"
+    _GEOJSON_QUERY_TEMPLATE = "[out:json];{query}out body geom{extra};"
 
     def __init__(self, *args, **kwargs):
         self.endpoint = kwargs.get("endpoint", self._endpoint)
@@ -37,14 +38,14 @@ class API(object):
             requests_log.setLevel(logging.DEBUG)
             requests_log.propagate = True
 
-    def Get(self, query, asGeoJSON=False):
+    def Get(self, query, asGeoJSON=False, center=False):
         """Pass in an Overpass query in Overpass QL"""
 
         response = ""
 
         try:
             response = json.loads(self._GetFromOverpass(
-                self._ConstructQLQuery(query, asGeoJSON=asGeoJSON)))
+                self._ConstructQLQuery(query, asGeoJSON=asGeoJSON, center=center)))
         except OverpassException as oe:
             print(oe)
             sys.exit(1)
@@ -65,7 +66,7 @@ class API(object):
         """Search for something."""
         pass
 
-    def _ConstructQLQuery(self, userquery, asGeoJSON=False):
+    def _ConstructQLQuery(self, userquery, asGeoJSON=False, center=False):
         raw_query = str(userquery)
         if not raw_query.endswith(";"):
             raw_query += ";"
@@ -75,9 +76,14 @@ class API(object):
         else:
             template = self._QUERY_TEMPLATE
 
+        extra = ""
+        if center:
+            extra = " center"
+
         complete_query = template.format(
             responseformat=self.responseformat,
-            query=raw_query)
+            query=raw_query,
+            extra=extra)
 
         if self.debug:
             print(complete_query)
@@ -90,9 +96,9 @@ class API(object):
         payload = {"data": query}
 
         try:
-            r = requests.get(
+            r = requests.post(
                 self.endpoint,
-                params=payload,
+                data=payload,
                 timeout=self.timeout
             )
         except requests.exceptions.Timeout:
